@@ -5,7 +5,7 @@ namespace mradang\LaravelDingtalk;
 use Illuminate\Support\ServiceProvider;
 use OSS\OssClient;
 
-class AliyunOssServiceProvider extends ServiceProvider
+class LaravelOssServiceProvider extends ServiceProvider
 {
 
     public function register()
