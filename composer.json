@@ -1,0 +1,27 @@
+{
+    "name": "mradang/laravel-oss",
+    "description": "laravel-oss",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "mradang",
+            "email": "mradang@163.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^6.5",
+        "aliyuncs/oss-sdk-php": "^2.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "mradang\\LaravelOss\\": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "mradang\\LaravelOss\\LaravelOssServiceProvider"
+            ]
+        }
+    }
+}
