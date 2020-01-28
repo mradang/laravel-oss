@@ -11,55 +11,71 @@ use mradang\LaravelOss\Models\OssObject;
 class OssService
 {
 
-    public static function makeUploadParams($class, $key)
+    public static function makeUploadParams($class, $key, array $data)
     {
-        debug(class_basename($class));
-
         $client = app('oss');
 
-        // $id = env('OSS_ACCESS_KEY_ID');          // 请填写您的AccessKeyId。
-        // $key = env('OSS_ACCESS_KEY_SECRET');     // 请填写您的AccessKeySecret。
-        $host = 'http://'.env('OSS_BUCKET').'.'.env('OSS_ENDPOINT');
-        $callbackUrl = self::app_url().'/api/activity/ossCallback';
-        $dir = Str::finish(config('oss.dir'), '/');
+        // 上传参数
+        $host = 'http://'.config('oss.bucket').'.'.config('oss.endpoint');
+        $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/';
 
+        // 回调参数
+        $callbackUrl = self::app_url().'/api/laravel_oss/callback';
         $callback_param = [
             'callbackUrl' => $callbackUrl,
-            'callbackBody' => 'filename=${object}&size=${size}&mimeType=${mimeType}&height=${imageInfo.height}&width=${imageInfo.width}',
+            'callbackBody' => \implode('&', [
+                'bucket=${bucket}',
+                'object=${object}',
+                'etag=${etag}',
+                'size=${size}',
+                'mimeType=${mimeType}',
+                'height=${imageInfo.height}',
+                'width=${imageInfo.width}',
+                'format=${imageInfo.format}',
+                'class=${x:class}',
+                'key=${x:key}',
+                'data=${x:data}',
+            ]),
             'callbackBodyType' => 'application/x-www-form-urlencoded',
         ];
-        debug($callback_param);
         $callback_string = json_encode($callback_param);
-
         $base64_callback_body = base64_encode($callback_string);
-        $now = time();
-        $expire = 30;  // 设置该policy超时时间是10s. 即这个policy过了这个有效时间，将不能访问。
-        $end = $now + $expire;
+        debug($callback_param);
+
+        // 上传策略
+        $end = time() + 30; // 30秒内有效
         $expiration = self::gmt_iso8601($end);
+        $object_name = $dir.self::generateObjectName()."_${key}"; // 指定上传对象名
 
-        // 最大文件大小.用户可以自己设置
-        $condition = array(0=>'content-length-range', 1=>0, 2=>1048576000);
-        $conditions[] = $condition;
+        $conditions = [
+            // 最大文件大小.用户可以自己设置
+            ['content-length-range', 0, 1048576000],
+            // 强制上传对象名称
+            ['eq', '$key', $object_name],
+        ];
 
-        // 表示用户上传的数据，必须是以$dir开始，不然上传会失败，这一步不是必须项，只是为了安全起见，防止用户通过policy上传到别人的目录。
-        $start = array(0=>'starts-with', 1=>'$key', 2=>$dir);
-        $conditions[] = $start;
-
-        $arr = array('expiration'=>$expiration,'conditions'=>$conditions);
-        $policy = json_encode($arr);
-        debug($arr, $policy);
+        $policy = json_encode([
+            'expiration' => $expiration,
+            'conditions' => $conditions,
+        ]);
+        debug($policy);
         $base64_policy = base64_encode($policy);
-        $string_to_sign = $base64_policy;
-        $signature = base64_encode(hash_hmac('sha1', $string_to_sign, $key, true));
+        $signature = base64_encode(hash_hmac('sha1', $base64_policy, config('oss.key'), true));
 
         $response = array();
-        $response['accessid'] = $id;
+        $response['accessid'] = config('oss.id');
         $response['host'] = $host;
         $response['policy'] = $base64_policy;
         $response['signature'] = $signature;
         $response['expire'] = $end;
         $response['callback'] = $base64_callback_body;
-        $response['dir'] = $dir;  // 这个参数是设置用户上传文件时指定的前缀。
+        $response['key'] = $object_name;  // 这个参数是设置用户上传文件名
+        $response['callback_vars'] = [
+            'class' => $class,
+            'key' => $key,
+            'data' => \json_encode($data),
+        ];
+        debug($response);
         return $response;
     }
 
@@ -83,7 +99,13 @@ class OssService
         return $expiration.'Z';
     }
 
-    public static function callback()
+    public static function generateObjectName()
+    {
+        $rand = sprintf('%04d', mt_rand(1, 9999));
+        return date('YmdHis').'_'.$rand;
+    }
+
+    public static function handleCallback()
     {
         // 1.获取OSS的签名header和公钥url header
         $authorizationBase64 = Arr::get($_SERVER, 'HTTP_AUTHORIZATION', '');
@@ -124,9 +146,32 @@ class OssService
         // 6.验证签名
         $ok = openssl_verify($authStr, $authorization, $pubKey, OPENSSL_ALGO_MD5);
         if ($ok === 1) {
-            return ['Status' => 'Ok'];
+            parse_str($body, $params);
+            debug($params);
+            return self::create($params);
         } else {
             return false;
+        }
+    }
+
+    public static function create(array $body)
+    {
+        $model = new OssObject([
+            'ossobjectable_type' => Arr::get($body, 'class'),
+            'ossobjectable_id' => Arr::get($body, 'key'),
+            'name' => Arr::get($body, 'object'),
+            'size' => Arr::get($body, 'size'),
+            'mimeType' => Arr::get($body, 'mimeType'),
+            'imageInfo' => Arr::only($body, ['width', 'height', 'format']),
+            'sort' => OssObject::where([
+                'ossobjectable_type' => Arr::get($body, 'class'),
+                'ossobjectable_id' => Arr::get($body, 'key'),
+            ])->max('sort') + 1,
+            'data' => json_decode(Arr::get($body, 'data', []), true),
+        ]);
+
+        if ($model->save()) {
+            return $model;
         }
     }
 

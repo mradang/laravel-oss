@@ -9,6 +9,7 @@ class OssObject extends Model {
     protected $guarded = [];
 
     protected $casts = [
+        'imageInfo' => 'array',
         'data' => 'array',
     ];
 

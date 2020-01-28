@@ -1,9 +1,10 @@
 <?php
 
-namespace mradang\LaravelDingtalk;
+namespace mradang\LaravelOss;
 
 use Illuminate\Support\ServiceProvider;
 use OSS\OssClient;
+use mradang\LaravelOss\Services\OssService;
 
 class LaravelOssServiceProvider extends ServiceProvider
 {
@@ -32,6 +33,12 @@ class LaravelOssServiceProvider extends ServiceProvider
                 realpath(__DIR__.'/../migrations') => database_path('migrations')
             ], 'migrations');
         }
+
+        $this->app->router->group(['prefix' => 'api/laravel_oss'], function ($router) {
+            $router->post('callback', function () {
+                return OssService::handleCallback();
+            });
+        });
     }
 
 }

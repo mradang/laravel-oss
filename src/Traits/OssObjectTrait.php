@@ -7,9 +7,9 @@ use mradang\LaravelOss\Services\OssService;
 trait OssObjectTrait
 {
 
-    public function ossobjectUploadParams()
+    public function ossobjectUploadParams(array $data = [])
     {
-        return OssService::makeUploadParams(__CLASS__, $this->getKey());
+        return OssService::makeUploadParams(__CLASS__, $this->getKey(), $data);
     }
 
     public function ossobjects()
@@ -50,14 +50,6 @@ trait OssObjectTrait
     public function ossobjectSaveSort(array $data)
     {
         return OssService::saveSort(__CLASS__, $this->getKey(), $data);
-    }
-
-    public static function boot()
-    {
-        parent::boot();
-        static::deleting(function($model) {
-            $model->ossobjectClear();
-        });
     }
 
 }
