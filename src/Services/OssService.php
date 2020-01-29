@@ -16,8 +16,8 @@ class OssService
         $client = app('oss');
 
         // 上传参数
-        $host = 'http://'.config('oss.bucket').'.'.config('oss.endpoint');
-        $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/';
+        $host = 'http://'.config('oss.endpoint');
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
 
         // 回调参数
         $callbackUrl = self::app_url().'/api/laravel_oss/callback';
@@ -45,7 +45,7 @@ class OssService
         // 上传策略
         $end = time() + 30; // 30秒内有效
         $expiration = self::gmt_iso8601($end);
-        $object_name = $dir.self::generateObjectName()."_${key}"; // 指定上传对象名
+        $object_name = $dir.self::generateObjectName(); // 指定上传对象名
 
         $conditions = [
             // 最大文件大小.用户可以自己设置
@@ -152,6 +152,10 @@ class OssService
 
         // 解码公钥 URL
         $pubKeyUrl = base64_decode($pubKeyUrlBase64);
+        $pubKeyHost = \parse_url($pubKeyUrl, \PHP_URL_HOST);
+        if ($pubKeyHost !== 'gosspublic.alicdn.com') {
+            return false;
+        }
 
         // 获取公钥内容
         $client = new Client();
@@ -185,6 +189,20 @@ class OssService
             'ossobjectable_id' => $model->ossobjectable_id,
         ])->max('sort') + 1;
         $model->save();
+    }
+
+    // $timeout URL 的有效期，最长 3600 秒（1 小时）
+    public static function generateObjectUrl($class, $object, $timeout = 300, $options = null)
+    {
+        $client = app('oss');
+
+        // 检查目录，避免为其它目录内容生成链接
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/';
+        if (!Str::startsWith($object, $dir)) {
+            return null;
+        }
+
+        return $client->signUrl(config('oss.bucket'), $object, $timeout, 'GET', $options);
     }
 
 }
