@@ -30,9 +30,8 @@ class LaravelOssServiceProvider extends ServiceProvider
             $this->publishes([
                 realpath(__DIR__.'/../config/config.php') => config_path('oss.php')
             ], 'config');
-            $this->publishes([
-                realpath(__DIR__.'/../migrations') => database_path('migrations')
-            ], 'migrations');
+
+            $this->loadMigrationsFrom(realpath(__DIR__.'/../migrations/'));
         }
 
         $this->app->router->group(['prefix' => 'api/laravel_oss'], function ($router) {
