@@ -18,7 +18,8 @@ class LaravelOssServiceProvider extends ServiceProvider
             return new OssClient(
                 $config['id'],
                 $config['key'],
-                $config['endpoint']
+                $config['endpoint'],
+                true
             );
         });
     }
