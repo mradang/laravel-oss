@@ -105,9 +105,10 @@ class OssService
         return date('YmdHis').'_'.$rand;
     }
 
-    public static function handleCallback()
+    // OSS 上传回调
+    public static function callback()
     {
-        // 1.获取OSS的签名header和公钥url header
+        // 从 HTTP 头中获取 OSS 的签名和公钥 url
         $authorizationBase64 = Arr::get($_SERVER, 'HTTP_AUTHORIZATION', '');
         $pubKeyUrlBase64 = Arr::get($_SERVER, 'HTTP_X_OSS_PUB_KEY_URL', '');
 
@@ -115,12 +116,44 @@ class OssService
             return false;
         }
 
-        // 2.获取OSS的签名
+        // 获取回调 body
+        $body = file_get_contents('php://input');
+        debug($body);
+
+        // 节约时间，直接返回结果，后续业务由 Job 处理
+        dispatch(new \mradang\LaravelOss\Jobs\OssCallback(
+            $_SERVER['REQUEST_URI'],
+            $pubKeyUrlBase64,
+            $authorizationBase64,
+            $body
+        ));
+        return self::parseCallbackBody($body);
+    }
+
+    // 将 OSS 回调参数解析为数据库格式
+    public static function parseCallbackBody($body)
+    {
+        parse_str($body, $params);
+        return [
+            'ossobjectable_type' => Arr::get($params, 'class'),
+            'ossobjectable_id' => Arr::get($params, 'key'),
+            'name' => Arr::get($params, 'object'),
+            'size' => Arr::get($params, 'size'),
+            'mimeType' => Arr::get($params, 'mimeType'),
+            'imageInfo' => Arr::only($params, ['width', 'height', 'format']),
+            'data' => json_decode(Arr::get($params, 'data', []), true),
+        ];
+    }
+
+    public static function handleCallback($request_uri, $pubKeyUrlBase64, $authorizationBase64, $body)
+    {
+        // 解码 OSS 签名
         $authorization = base64_decode($authorizationBase64);
 
-        // 3.获取公钥
+        // 解码公钥 URL
         $pubKeyUrl = base64_decode($pubKeyUrlBase64);
 
+        // 获取公钥内容
         $client = new Client();
         $response = $client->request('GET', $pubKeyUrl);
         $pubKey = $response->getBody()->getContents();
@@ -129,13 +162,9 @@ class OssService
             return false;
         }
 
-        // 4.获取回调body
-        $body = file_get_contents('php://input');
-        debug($body);
-
-        // 5.拼接待签名字符串
+        // 拼接待签名字符串
         $authStr = '';
-        $path = $_SERVER['REQUEST_URI'];
+        $path = $request_uri;
         $pos = strpos($path, '?');
         if ($pos === false) {
             $authStr = urldecode($path)."\n".$body;
@@ -143,36 +172,19 @@ class OssService
             $authStr = urldecode(substr($path, 0, $pos)).substr($path, $pos, strlen($path) - $pos)."\n".$body;
         }
 
-        // 6.验证签名
+        // 验证签名
         $ok = openssl_verify($authStr, $authorization, $pubKey, OPENSSL_ALGO_MD5);
-        if ($ok === 1) {
-            parse_str($body, $params);
-            debug($params);
-            return self::create($params);
-        } else {
+        if ($ok !== 1) {
             return false;
         }
-    }
 
-    public static function create(array $body)
-    {
-        $model = new OssObject([
-            'ossobjectable_type' => Arr::get($body, 'class'),
-            'ossobjectable_id' => Arr::get($body, 'key'),
-            'name' => Arr::get($body, 'object'),
-            'size' => Arr::get($body, 'size'),
-            'mimeType' => Arr::get($body, 'mimeType'),
-            'imageInfo' => Arr::only($body, ['width', 'height', 'format']),
-            'sort' => OssObject::where([
-                'ossobjectable_type' => Arr::get($body, 'class'),
-                'ossobjectable_id' => Arr::get($body, 'key'),
-            ])->max('sort') + 1,
-            'data' => json_decode(Arr::get($body, 'data', []), true),
-        ]);
-
-        if ($model->save()) {
-            return $model;
-        }
+        // 入库
+        $model = new OssObject(self::parseCallbackBody($body));
+        $model->sort = OssObject::where([
+            'ossobjectable_type' => $model->ossobjectable_type,
+            'ossobjectable_id' => $model->ossobjectable_id,
+        ])->max('sort') + 1;
+        $model->save();
     }
 
 }

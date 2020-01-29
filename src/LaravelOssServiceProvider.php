@@ -36,7 +36,7 @@ class LaravelOssServiceProvider extends ServiceProvider
 
         $this->app->router->group(['prefix' => 'api/laravel_oss'], function ($router) {
             $router->post('callback', function () {
-                return OssService::handleCallback();
+                return OssService::callback();
             });
         });
     }
