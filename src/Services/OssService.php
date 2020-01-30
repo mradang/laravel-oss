@@ -140,7 +140,7 @@ class OssService
             'name' => Arr::get($params, 'object'),
             'size' => Arr::get($params, 'size'),
             'mimeType' => Arr::get($params, 'mimeType'),
-            'imageInfo' => Arr::only($params, ['width', 'height', 'format']),
+            'imageInfo' => Arr::get($params, 'width') ? Arr::only($params, ['width', 'height', 'format']) : null,
             'data' => json_decode(Arr::get($params, 'data', []), true),
         ];
     }
