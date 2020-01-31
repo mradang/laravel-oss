@@ -18,6 +18,12 @@ class OssService
         // 上传参数
         $host = 'http://'.config('oss.endpoint');
         $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
+        $callback_vars = [
+            'class' => $class,
+            'key' => $key,
+            'data' => $data,
+        ];
+        $callback_vars_encrypt = encrypt($callback_vars);
 
         // 回调参数
         $callbackUrl = self::app_url().'/api/laravel_oss/callback';
@@ -32,9 +38,7 @@ class OssService
                 'height=${imageInfo.height}',
                 'width=${imageInfo.width}',
                 'format=${imageInfo.format}',
-                'class=${x:class}',
-                'key=${x:key}',
-                'data=${x:data}',
+                'callbackvars=${x:callbackvars}',
             ]),
             'callbackBodyType' => 'application/x-www-form-urlencoded',
         ];
@@ -54,6 +58,8 @@ class OssService
             ['content-length-range', 0, self::human2byte(config('oss.maxsize'))],
             // 强制上传对象名称
             ['eq', '$key', $object_name],
+            // 限制额外的参数
+            ['eq', '$x:callbackvars', $callback_vars_encrypt],
         ];
 
         $policy = json_encode([
@@ -72,11 +78,7 @@ class OssService
         $response['expire'] = $end;
         $response['callback'] = $base64_callback_body;
         $response['key'] = $object_name;  // 这个参数是设置用户上传文件名
-        $response['callback_vars'] = [
-            'class' => $class,
-            'key' => $key,
-            'data' => \json_encode($data),
-        ];
+        $response['callbackvars'] = $callback_vars_encrypt;
         debug($response);
         return $response;
     }
@@ -151,14 +153,15 @@ class OssService
     public static function parseCallbackBody($body)
     {
         parse_str($body, $params);
+        $callbackvars = decrypt($params['callbackvars']);
         return [
-            'ossobjectable_type' => Arr::get($params, 'class'),
-            'ossobjectable_id' => Arr::get($params, 'key'),
+            'ossobjectable_type' => Arr::get($callbackvars, 'class'),
+            'ossobjectable_id' => Arr::get($callbackvars, 'key'),
             'name' => Arr::get($params, 'object'),
             'size' => Arr::get($params, 'size'),
             'mimeType' => Arr::get($params, 'mimeType'),
             'imageInfo' => Arr::get($params, 'width') ? Arr::only($params, ['width', 'height', 'format']) : null,
-            'data' => json_decode(Arr::get($params, 'data', []), true),
+            'data' => Arr::get($callbackvars, 'data', []),
         ];
     }
 
