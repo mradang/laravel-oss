@@ -27,6 +27,11 @@ trait OssObjectTrait
         return OssService::delete(__CLASS__, $this->getKey(), $name);
     }
 
+    public function ossobjectClear()
+    {
+        return OssService::clear(__CLASS__, $this->getKey());
+    }
+
 
 
     public function ossobjectCreateByFile($file, array $data = [])
@@ -39,10 +44,6 @@ trait OssObjectTrait
         return OssService::createByUrl(__CLASS__, $this->getKey(), $url, $data);
     }
 
-    public function ossobjectClear()
-    {
-        return OssService::clear(__CLASS__, $this->getKey());
-    }
 
 
 

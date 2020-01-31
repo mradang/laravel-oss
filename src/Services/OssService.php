@@ -253,6 +253,7 @@ class OssService
             throw new \Exception('OSS Object '.$object.' delete fail.');
         }
 
+        // 在 callback 作业处理之前执行删除，需要确保数据入库，然后删除数据
         $retry = 10;
         for ($i=0; $i < $retry; $i++) {
             $ossobject = OssObject::where([
@@ -271,6 +272,17 @@ class OssService
 
         if ($i === $retry) {
             throw new \Exception('数据未入库');
+        }
+    }
+
+    public static function clear($class, $key)
+    {
+        $objects = OssObject::where([
+            'ossobjectable_type' => $class,
+            'ossobjectable_id' => $key,
+        ])->get();
+        foreach ($objects as $object) {
+            self::delete($class, $key, $object->name);
         }
     }
 
