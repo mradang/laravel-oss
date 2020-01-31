@@ -286,4 +286,16 @@ class OssService
         }
     }
 
+    // 保存排序值
+    public static function saveSort($class, $key, array $data)
+    {
+        foreach ($data as $item) {
+            OssObject::where([
+                'id' => $item['id'],
+                'ossobjectable_type' => $class,
+                'ossobjectable_id' => $key,
+            ])->update(['sort' => $item['sort']]);
+        }
+    }
+
 }
