@@ -17,6 +17,15 @@ trait OssObjectTrait
         return $this->morphMany('mradang\LaravelOss\Models\OssObject', 'ossobjectable')->orderBy('sort');
     }
 
+    public function ossobjectFind($name)
+    {
+        return OssService::find(__CLASS__, $this->getKey(), $name);
+    }
+
+    public function ossobjectDelete($name)
+    {
+        return OssService::delete(__CLASS__, $this->getKey(), $name);
+    }
 
 
 
@@ -30,21 +39,12 @@ trait OssObjectTrait
         return OssService::createByUrl(__CLASS__, $this->getKey(), $url, $data);
     }
 
-    public function ossobjectDelete($id)
-    {
-        return OssService::delete(__CLASS__, $this->getKey(), $id);
-    }
-
     public function ossobjectClear()
     {
         return OssService::clear(__CLASS__, $this->getKey());
     }
 
 
-    public function ossobjectFind($id)
-    {
-        return OssService::find(__CLASS__, $this->getKey(), $id);
-    }
 
     public function ossobjectSaveSort(array $data)
     {

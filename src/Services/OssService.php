@@ -48,8 +48,10 @@ class OssService
         $object_name = $dir.self::generateObjectName(); // 指定上传对象名
 
         $conditions = [
+            // 限定存储桶
+            ['eq', '$bucket', config('oss.bucket')],
             // 最大文件大小.用户可以自己设置
-            ['content-length-range', 0, 1048576000],
+            ['content-length-range', 0, self::human2byte(config('oss.maxsize'))],
             // 强制上传对象名称
             ['eq', '$key', $object_name],
         ];
@@ -105,6 +107,21 @@ class OssService
         return date('YmdHis').'_'.$rand;
     }
 
+    // 将人类可读的文件大小值转换为数字，支持 K, M, G and T，无效的输入返回 0
+    public static function human2byte($value) : int
+    {
+        $ret = preg_replace_callback('/^\s*([\d.]+)\s*(?:([kmgt]?)b?)?\s*$/i', function ($m) {
+            switch (strtolower($m[2])) {
+                case 't': $m[1] *= 1024;
+                case 'g': $m[1] *= 1024;
+                case 'm': $m[1] *= 1024;
+                case 'k': $m[1] *= 1024;
+            }
+            return $m[1];
+        }, $value);
+        return is_numeric($ret) ? (int)$ret : 0;
+    }
+
     // OSS 上传回调
     public static function callback()
     {
@@ -145,6 +162,7 @@ class OssService
         ];
     }
 
+    // 作业处理 OSS 回调
     public static function handleCallback($request_uri, $pubKeyUrlBase64, $authorizationBase64, $body)
     {
         // 解码 OSS 签名
@@ -203,6 +221,54 @@ class OssService
         }
 
         return $client->signUrl(config('oss.bucket'), $object, $timeout, 'GET', $options);
+    }
+
+    public static function find($class, $key, $object)
+    {
+        return OssObject::where([
+            'ossobjectable_type' => $class,
+            'ossobjectable_id' => $key,
+            'name' => $object,
+        ])->first();
+    }
+
+    public static function delete($class, $key, $object)
+    {
+        // 检查目录，避免操作其它目录内容
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
+        if (Str::startsWith($object, $dir)) {
+            \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
+        }
+    }
+
+    // 作业处理删除
+    public static function handleDelete($class, $key, $object)
+    {
+        $ret = app('oss')->deleteObject(config('oss.bucket'), $object);
+        $http_code = Arr::get($ret, 'info.http_code');
+        if ($http_code < 200 || $http_code >= 300) {
+            throw new \Exception('OSS Object '.$object.' delete fail.');
+        }
+
+        $retry = 10;
+        for ($i=0; $i < $retry; $i++) {
+            $ossobject = OssObject::where([
+                'ossobjectable_type' => $class,
+                'ossobjectable_id' => $key,
+                'name' => $object,
+            ])->first();
+
+            if ($ossobject) {
+                $ossobject->delete();
+                break;
+            } else {
+                sleep(5);
+            }
+        }
+
+        if ($i === $retry) {
+            throw new \Exception('数据未入库');
+        }
     }
 
 }
