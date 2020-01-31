@@ -37,8 +37,6 @@ trait OssObjectTrait
         return OssService::saveSort(__CLASS__, $this->getKey(), $data);
     }
 
-
-
     public function ossobjectCreateByFile($file, array $data = [])
     {
         return OssService::createByFile(__CLASS__, $this->getKey(), $file, $data);
@@ -48,9 +46,5 @@ trait OssObjectTrait
     {
         return OssService::createByUrl(__CLASS__, $this->getKey(), $url, $data);
     }
-
-
-
-
 
 }

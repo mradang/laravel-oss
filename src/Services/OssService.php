@@ -162,6 +162,7 @@ class OssService
             'mimeType' => Arr::get($params, 'mimeType'),
             'imageInfo' => Arr::get($params, 'width') ? Arr::only($params, ['width', 'height', 'format']) : null,
             'data' => Arr::get($callbackvars, 'data', []),
+            'created_at' => date('Y-m-d H:i:s'),
         ];
     }
 
@@ -296,6 +297,65 @@ class OssService
                 'ossobjectable_id' => $key,
             ])->update(['sort' => $item['sort']]);
         }
+    }
+
+    // 通过本地文件上传
+    public static function createByFile($class, $key, $file, array $data)
+    {
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
+        $object = $dir.self::generateObjectName(); // 指定上传对象名
+
+        $ret = app('oss')->uploadFile(config('oss.bucket'), $object, $file);
+
+        $http_code = Arr::get($ret, 'info.http_code');
+        if ($http_code < 200 || $http_code >= 300) {
+            throw new \Exception('OSS Object '.$object.' upload fail.');
+        }
+
+        // 入库
+        $imagesize = @getimagesize($file);
+        $model = new OssObject([
+            'ossobjectable_type' => $class,
+            'ossobjectable_id' => $key,
+            'name' => $object,
+            'size' => \filesize($file),
+            'mimeType' => Arr::get($ret, 'oss-requestheaders.Content-Type'),
+            'imageInfo' => is_array($imagesize) ? ['width' => $imagesize[0], 'height' => $imagesize[1]] : null,
+            'data' => $data,
+            'sort' => OssObject::where([
+                'ossobjectable_type' => $class,
+                'ossobjectable_id' => $key,
+            ])->max('sort') + 1,
+        ]);
+        $model->save();
+
+        return $model;
+    }
+
+    // 上传指定 URL 文件
+    public static function createByUrl($class, $key, $url, array $data)
+    {
+        $filename = basename(parse_url($url, PHP_URL_PATH));
+
+        $client = new Client();
+        $response = $client->request('HEAD', $url);
+
+        // 从 Content-Disposition 中获取文件名信息
+        $ContentDisposition = Arr::get($response->getHeaders(), 'Content-Disposition.0');
+        if (preg_match('/filename="(.*?)"/', $ContentDisposition, $matches)) {
+            $filename = $matches[1];
+        }
+
+        $file_ext = pathinfo($filename, PATHINFO_EXTENSION);
+        $file_ext = ($file_ext ? '.' : '').$file_ext;
+
+        $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss').$file_ext;
+
+        // 下载文件
+        $client->request('GET', $url, ['sink' => $temp_file]);
+        $ret = self::createByFile($class, $key, $temp_file, $data);
+        @\unlink($temp_file);
+        return $ret;
     }
 
 }
