@@ -62,7 +62,7 @@ protected static function boot()
 > - morphMany ossobjects 对象关联（一对多）
 > - mradang\LaravelOss\Models\OssObject ossobjectFind($name) 查找对象
 > - void ossobjectDelete($name) 删除对象（异步）
-> - void attachmentClear() 清空模型的全部对象
+> - void ossobjectClear() 清空模型的全部对象
 > - void ossobjectSaveSort(array $data) 保存对象排序
 > - mradang\LaravelOss\Models\OssObject ossobjectCreateByFile($filename, array $data = []) 上传本地文件
 > - mradang\LaravelOss\Models\OssObject ossobjectCreateByUrl($url, array $data = []) 上传 Url 文件
