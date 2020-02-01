@@ -45,7 +45,6 @@ class OssService
         ];
         $callback_string = json_encode($callback_param);
         $base64_callback_body = base64_encode($callback_string);
-        debug($callback_param);
 
         // 上传策略
         $end = time() + 30; // 30秒内有效
@@ -69,7 +68,6 @@ class OssService
             'expiration' => $expiration,
             'conditions' => $conditions,
         ]);
-        debug($policy);
         $base64_policy = base64_encode($policy);
         $signature = base64_encode(hash_hmac('sha1', $base64_policy, config('oss.key'), true));
 
@@ -82,7 +80,6 @@ class OssService
         $response['callback'] = $base64_callback_body;
         $response['key'] = $object_name;  // 这个参数是设置用户上传文件名
         $response['callbackvars'] = $callback_vars_encrypt;
-        debug($response);
         return $response;
     }
 
@@ -140,7 +137,6 @@ class OssService
 
         // 获取回调 body
         $body = file_get_contents('php://input');
-        debug($body);
 
         // 节约时间，直接返回结果，后续业务由 Job 处理
         dispatch(new \mradang\LaravelOss\Jobs\OssCallback(
@@ -305,7 +301,6 @@ class OssService
     // 通过本地文件上传
     public static function createByFile($class, $key, $filename, array $data, $extension = null)
     {
-        debug($class, $key, $filename, $data, $extension);
         // 文件扩展名
         $extension = \strtolower($extension ?? pathinfo($filename, PATHINFO_EXTENSION));
         if (empty($extension)) {
@@ -324,9 +319,7 @@ class OssService
         }
 
         // 上传
-        debug(config('oss.bucket'), $object_name, $filename, $options);
         $ret = app('oss')->uploadFile(config('oss.bucket'), $object_name, $filename, $options);
-        debug($ret);
         $http_code = Arr::get($ret, 'info.http_code');
         if ($http_code < 200 || $http_code >= 300) {
             throw new \Exception('OSS Object '.$object_name.' upload fail.');
@@ -359,11 +352,9 @@ class OssService
         $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss');
         $client = new Client();
         $response = $client->request('GET', $url, ['sink' => $temp_file]);
-        debug(is_file($temp_file));
 
         // 解析 URL 文件名
         $filename = basename(parse_url($url, PHP_URL_PATH));
-        debug($url, parse_url($url, PHP_URL_PATH), basename(parse_url($url, PHP_URL_PATH)));
 
         // 解析 Content-Disposition 文件名
         $ContentDisposition = Arr::get($response->getHeaders(), 'Content-Disposition.0');
