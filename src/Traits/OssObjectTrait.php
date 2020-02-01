@@ -7,9 +7,9 @@ use mradang\LaravelOss\Services\OssService;
 trait OssObjectTrait
 {
 
-    public function ossobjectUploadParams(array $data = [])
+    public function ossobjectUploadParams($extension, array $data = [])
     {
-        return OssService::makeUploadParams(__CLASS__, $this->getKey(), $data);
+        return OssService::makeUploadParams(__CLASS__, $this->getKey(), $extension, $data);
     }
 
     public function ossobjects()
@@ -37,9 +37,9 @@ trait OssObjectTrait
         return OssService::saveSort(__CLASS__, $this->getKey(), $data);
     }
 
-    public function ossobjectCreateByFile($file, array $data = [])
+    public function ossobjectCreateByFile($filename, array $data = [])
     {
-        return OssService::createByFile(__CLASS__, $this->getKey(), $file, $data);
+        return OssService::createByFile(__CLASS__, $this->getKey(), $filename, $data);
     }
 
     public function ossobjectCreateByUrl($url, array $data = [])

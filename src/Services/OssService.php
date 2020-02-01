@@ -5,13 +5,14 @@ namespace mradang\LaravelOss\Services;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use GuzzleHttp\Client;
+use OSS\Core\MimeTypes;
 
 use mradang\LaravelOss\Models\OssObject;
 
 class OssService
 {
 
-    public static function makeUploadParams($class, $key, array $data)
+    public static function makeUploadParams($class, $key, $extension, array $data)
     {
         $client = app('oss');
 
@@ -49,7 +50,7 @@ class OssService
         // 上传策略
         $end = time() + 30; // 30秒内有效
         $expiration = self::gmt_iso8601($end);
-        $object_name = $dir.self::generateObjectName(); // 指定上传对象名
+        $object_name = $dir.self::generateObjectName().'.'.$extension; // 指定上传对象名
 
         $conditions = [
             // 限定存储桶
@@ -58,6 +59,8 @@ class OssService
             ['content-length-range', 0, self::human2byte(config('oss.maxsize'))],
             // 强制上传对象名称
             ['eq', '$key', $object_name],
+            // 限制 Content-Type 类型
+            ['eq', '$Content-Type', MimeTypes::getMimetype('filename.'.$extension)],
             // 限制额外的参数
             ['eq', '$x:callbackvars', $callback_vars_encrypt],
         ];
@@ -106,7 +109,7 @@ class OssService
     public static function generateObjectName()
     {
         $rand = sprintf('%04d', mt_rand(1, 9999));
-        return date('YmdHis').'_'.$rand;
+        return date('Ymd_His').'_'.$rand;
     }
 
     // 将人类可读的文件大小值转换为数字，支持 K, M, G and T，无效的输入返回 0
@@ -300,25 +303,42 @@ class OssService
     }
 
     // 通过本地文件上传
-    public static function createByFile($class, $key, $file, array $data)
+    public static function createByFile($class, $key, $filename, array $data, $extension = null)
     {
+        debug($class, $key, $filename, $data, $extension);
+        // 文件扩展名
+        $extension = \strtolower($extension ?? pathinfo($filename, PATHINFO_EXTENSION));
+        if (empty($extension)) {
+            throw new Exception('文件扩展名为空');
+        }
+
+        // 生成 OSS Object 名
         $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
-        $object = $dir.self::generateObjectName(); // 指定上传对象名
+        $object_name = $dir.self::generateObjectName().'.'.$extension; // 指定上传对象名
 
-        $ret = app('oss')->uploadFile(config('oss.bucket'), $object, $file);
+        // 上传选项
+        $options = [];
+        $mime = MimeTypes::getMimetype('filename.'.$extension);
+        if ($mime) {
+            $options['Content-Type'] = $mime;
+        }
 
+        // 上传
+        debug(config('oss.bucket'), $object_name, $filename, $options);
+        $ret = app('oss')->uploadFile(config('oss.bucket'), $object_name, $filename, $options);
+        debug($ret);
         $http_code = Arr::get($ret, 'info.http_code');
         if ($http_code < 200 || $http_code >= 300) {
-            throw new \Exception('OSS Object '.$object.' upload fail.');
+            throw new \Exception('OSS Object '.$object_name.' upload fail.');
         }
 
         // 入库
-        $imagesize = @getimagesize($file);
+        $imagesize = @getimagesize($filename);
         $model = new OssObject([
             'ossobjectable_type' => $class,
             'ossobjectable_id' => $key,
-            'name' => $object,
-            'size' => \filesize($file),
+            'name' => $object_name,
+            'size' => \filesize($filename),
             'mimeType' => Arr::get($ret, 'oss-requestheaders.Content-Type'),
             'imageInfo' => is_array($imagesize) ? ['width' => $imagesize[0], 'height' => $imagesize[1]] : null,
             'data' => $data,
@@ -335,25 +355,27 @@ class OssService
     // 上传指定 URL 文件
     public static function createByUrl($class, $key, $url, array $data)
     {
-        $filename = basename(parse_url($url, PHP_URL_PATH));
-
+        // 下载
+        $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss');
         $client = new Client();
-        $response = $client->request('HEAD', $url);
+        $response = $client->request('GET', $url, ['sink' => $temp_file]);
+        debug(is_file($temp_file));
 
-        // 从 Content-Disposition 中获取文件名信息
+        // 解析 URL 文件名
+        $filename = basename(parse_url($url, PHP_URL_PATH));
+        debug($url, parse_url($url, PHP_URL_PATH), basename(parse_url($url, PHP_URL_PATH)));
+
+        // 解析 Content-Disposition 文件名
         $ContentDisposition = Arr::get($response->getHeaders(), 'Content-Disposition.0');
         if (preg_match('/filename="(.*?)"/', $ContentDisposition, $matches)) {
             $filename = $matches[1];
         }
 
-        $file_ext = pathinfo($filename, PATHINFO_EXTENSION);
-        $file_ext = ($file_ext ? '.' : '').$file_ext;
+        // 计算扩展名
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
-        $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss').$file_ext;
-
-        // 下载文件
-        $client->request('GET', $url, ['sink' => $temp_file]);
-        $ret = self::createByFile($class, $key, $temp_file, $data);
+        // 上传文件
+        $ret = self::createByFile($class, $key, $temp_file, $data, $extension);
         @\unlink($temp_file);
         return $ret;
     }
