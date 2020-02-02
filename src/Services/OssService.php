@@ -8,14 +8,13 @@ use GuzzleHttp\Client;
 use OSS\Core\MimeTypes;
 
 use mradang\LaravelOss\Models\OssObject;
+use mradang\LaravelOss\Models\OssTrack;
 
 class OssService
 {
 
     public static function makeUploadParams($class, $key, $extension, array $data)
     {
-        $client = app('oss');
-
         // 上传参数
         $host = 'http://'.config('oss.endpoint');
         $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
@@ -71,6 +70,14 @@ class OssService
         $base64_policy = base64_encode($policy);
         $signature = base64_encode(hash_hmac('sha1', $base64_policy, config('oss.key'), true));
 
+        // 跟踪对象
+        OssTrack::create([
+            'osstracktable_type' => $class,
+            'osstracktable_id' => $key,
+            'name' => $object_name,
+        ]);
+
+        // 返回
         $response = array();
         $response['accessid'] = config('oss.id');
         $response['host'] = $host;
@@ -210,6 +217,13 @@ class OssService
             'ossobjectable_id' => $model->ossobjectable_id,
         ])->max('sort') + 1;
         $model->save();
+
+        // 取消跟踪对象
+        OssTrack::where([
+            'osstracktable_type' => $model->ossobjectable_type,
+            'osstracktable_id' => $model->ossobjectable_id,
+            'name' => $model->name,
+        ])->delete();
     }
 
     // $timeout URL 的有效期，最长 3600 秒（1 小时）
@@ -239,39 +253,32 @@ class OssService
     {
         // 检查目录，避免操作其它目录内容
         $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
-        if (Str::startsWith($object, $dir)) {
-            \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
+        if (!Str::startsWith($object, $dir)) {
+            throw new \Exception('非法请求');
         }
+
+        // 尝试删除数据
+        $row = OssObject::where([
+            'ossobjectable_type' => $class,
+            'ossobjectable_id' => $key,
+            'name' => $object,
+        ])->delete();
+        if (empty($row)) {
+            throw new \Exception('数据未就绪，请重试');
+        }
+
+        // OSS Object 删除作业
+        \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
     }
 
-    // 作业处理删除
+    // 删除 OSS Object，仅限数据库相关数据删除后调用
+    // 仅限 job 调用，可利用 job 失败重试机制确保删除成功
     public static function handleDelete($class, $key, $object)
     {
         $ret = app('oss')->deleteObject(config('oss.bucket'), $object);
         $http_code = Arr::get($ret, 'info.http_code');
-        if ($http_code < 200 || $http_code >= 300) {
-            throw new \Exception('OSS Object '.$object.' delete fail.');
-        }
-
-        // 在 callback 作业处理之前执行删除，需要确保数据入库，然后删除数据
-        $retry = 10;
-        for ($i=0; $i < $retry; $i++) {
-            $ossobject = OssObject::where([
-                'ossobjectable_type' => $class,
-                'ossobjectable_id' => $key,
-                'name' => $object,
-            ])->first();
-
-            if ($ossobject) {
-                $ossobject->delete();
-                break;
-            } else {
-                sleep(5);
-            }
-        }
-
-        if ($i === $retry) {
-            throw new \Exception('数据未入库');
+        if ($http_code != 204) {
+            throw new \Exception('OSS Object '.$object.' delete fail');
         }
     }
 
@@ -321,7 +328,7 @@ class OssService
         // 上传
         $ret = app('oss')->uploadFile(config('oss.bucket'), $object_name, $filename, $options);
         $http_code = Arr::get($ret, 'info.http_code');
-        if ($http_code < 200 || $http_code >= 300) {
+        if ($http_code != 200) {
             throw new \Exception('OSS Object '.$object_name.' upload fail.');
         }
 
@@ -369,6 +376,34 @@ class OssService
         $ret = self::createByFile($class, $key, $temp_file, $data, $extension);
         @\unlink($temp_file);
         return $ret;
+    }
+
+    // 调度执行跟踪器，检查上传 OSS Object 的数据入库情况
+    public static function scheduleTracker()
+    {
+        // 处理超过指定时间之前的数据
+        // 能查到跟踪数据，可能的原因是：用户上传失败、用户放弃上传或 callback 出错
+        $before_time = now()->subMinutes(60); // 60 分钟之前
+        $tracks = OssTrack::where('created_at', '<', $before_time)->inRandomOrder()->take(5)->get();
+        $tracks->each(function ($track) {
+            debug('scheduleTracker', $track);
+
+            // 取出常用值
+            $class = $track->osstracktable_type;
+            $key = $track->osstracktable_id;
+            $object = $track->name;
+
+            // 检查对象是否入库，避免误删 OSS Object
+            $exists = OssObject::where([
+                'ossobjectable_type' => $class,
+                'ossobjectable_id' => $key,
+                'name' => $object,
+            ])->exists();
+            if (!$exists) {
+                \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
+                $track->delete();
+            }
+        });
     }
 
 }
