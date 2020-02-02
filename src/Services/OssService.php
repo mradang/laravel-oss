@@ -386,8 +386,6 @@ class OssService
         $before_time = now()->subMinutes(60); // 60 分钟之前
         $tracks = OssTrack::where('created_at', '<', $before_time)->inRandomOrder()->take(5)->get();
         $tracks->each(function ($track) {
-            debug('scheduleTracker', $track);
-
             // 取出常用值
             $class = $track->osstracktable_type;
             $key = $track->osstracktable_id;
@@ -399,6 +397,7 @@ class OssService
                 'ossobjectable_id' => $key,
                 'name' => $object,
             ])->exists();
+
             if (!$exists) {
                 \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
                 $track->delete();
