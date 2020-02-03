@@ -29,10 +29,29 @@ OSS_DIR=
 OSS_MAXSIZE=2MB
 ```
 
+2. 添加对象跟踪任务
+
+修改 laravel 工程 app\Console\Kernel.php 文件，在 schedule 函数中增加
+```php
+// 跟踪 OSS 对象上传
+$schedule
+->call(function () {
+    try {
+        \mradang\LaravelOss\Services\OssService::scheduleTracker();
+    } catch (\Exception $e) {
+        logger()->warning('OSS 对象跟踪失败：'.$e->getMessage());
+    }
+})
+->cron('* * * * *')
+->name('OssService::scheduleTracker')
+->withoutOverlapping();
+```
+
 ## 添加的内容
 
 ### 添加的数据表迁移
 - oss_objects
+- oss_tracks
 
 ### 添加的路由
 - post /api/laravel_oss/callback
