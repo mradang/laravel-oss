@@ -85,6 +85,7 @@ protected static function boot()
 > - void ossobjectSaveSort(array $data) 保存对象排序
 > - mradang\LaravelOss\Models\OssObject ossobjectCreateByFile($filename, array $data = []) 上传本地文件
 > - mradang\LaravelOss\Models\OssObject ossobjectCreateByUrl($url, array $data = []) 上传 Url 文件
+> - mradang\LaravelOss\Models\OssObject ossobjectAsyncCreateByUrl($url, array $data = []) 异步上传 Url 文件
 
 ### 模型静态方法
 ```php
