@@ -352,7 +352,7 @@ class OssService
         return $model;
     }
 
-    // 上传指定 URL 文件
+    // 同步上传指定 URL 文件
     public static function createByUrl($class, $key, $url, array $data)
     {
         // 下载
@@ -376,6 +376,12 @@ class OssService
         $ret = self::createByFile($class, $key, $temp_file, $data, $extension);
         @\unlink($temp_file);
         return $ret;
+    }
+
+    // 异步上传指定 Url 文件
+    public static function asyncCreateByUrl($class, $key, $url, array $data)
+    {
+        \mradang\LaravelOss\Jobs\OssUploadUrl::dispatch($class, $key, $url, $data);
     }
 
     // 调度执行跟踪器，检查上传 OSS Object 的数据入库情况

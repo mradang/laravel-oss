@@ -47,6 +47,11 @@ trait OssObjectTrait
         return OssService::createByUrl(__CLASS__, $this->getKey(), $url, $data);
     }
 
+    public function ossobjectAsyncCreateByUrl($url, array $data = [])
+    {
+        return OssService::asyncCreateByUrl(__CLASS__, $this->getKey(), $url, $data);
+    }
+
     public static function ossobjectGenerateUrl($object, $timeout = 300, $options = null)
     {
         return OssService::generateObjectUrl(__CLASS__, $object, $timeout, $options);
