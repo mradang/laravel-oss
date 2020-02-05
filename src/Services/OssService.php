@@ -229,7 +229,9 @@ class OssService
     // $timeout URL 的有效期，最长 3600 秒（1 小时）
     public static function generateObjectUrl($class, $object, $timeout = 300, $options = null)
     {
-        $client = app('oss');
+        if (empty($object)) {
+            return null;
+        }
 
         // 检查目录，避免为其它目录内容生成链接
         $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/';
@@ -237,7 +239,7 @@ class OssService
             return null;
         }
 
-        return $client->signUrl(config('oss.bucket'), $object, $timeout, 'GET', $options);
+        return app('oss')->signUrl(config('oss.bucket'), $object, $timeout, 'GET', $options);
     }
 
     public static function find($class, $key, $object)
