@@ -210,8 +210,16 @@ class OssService
             return false;
         }
 
+        // 验证主模型是否存在
+        $data = self::parseCallbackBody($body);
+        $model = \call_user_func([$data['ossobjectable_type'], 'find'], $data['ossobjectable_id']);
+        if (empty($model)) {
+            info('模型不存在，忽略 OSS Callback');
+            return false;
+        }
+
         // 入库
-        $model = new OssObject(self::parseCallbackBody($body));
+        $model = new OssObject($data);
         $model->sort = OssObject::where([
             'ossobjectable_type' => $model->ossobjectable_type,
             'ossobjectable_id' => $model->ossobjectable_id,
