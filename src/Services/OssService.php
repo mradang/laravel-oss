@@ -398,8 +398,12 @@ class OssService
     public static function scheduleTracker()
     {
         // 处理超过指定时间之前的数据
-        // 能查到跟踪数据，可能的原因是：用户上传失败、用户放弃上传或 callback 出错
-        $before_time = now()->subMinutes(60); // 60 分钟之前
+        // 能查到跟踪数据，可能的原因：
+        // - callback 出错
+        // - callback 作业未处理完成（job 任务过多，无法及时处理，数据没有存入数据库）
+        // - 用户上传失败
+        // - 用户放弃上传
+        $before_time = now()->addHours(24); // 24 小时之前
         $tracks = OssTrack::where('created_at', '<', $before_time)->inRandomOrder()->take(5)->get();
         $tracks->each(function ($track) {
             // 取出常用值
