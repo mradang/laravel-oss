@@ -321,7 +321,7 @@ class OssService
         // 文件扩展名
         $extension = \strtolower($extension ?? pathinfo($filename, PATHINFO_EXTENSION));
         if (empty($extension)) {
-            throw new Exception('文件扩展名为空');
+            throw new \Exception('文件扩展名为空');
         }
 
         // 生成 OSS Object 名
