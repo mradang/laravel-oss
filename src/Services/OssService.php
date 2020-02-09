@@ -16,7 +16,7 @@ class OssService
     public static function makeUploadParams($class, $key, $extension, array $data)
     {
         // 上传参数
-        $host = 'http://' . config('oss.endpoint');
+        $host = config('oss.endpoint');
         $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/' . $key . '/';
         $callback_vars = [
             'class' => $class,
