@@ -5,6 +5,7 @@ namespace mradang\LaravelOss\Services;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use GuzzleHttp\Client;
+use Illuminate\Http\File;
 use OSS\Core\MimeTypes;
 
 use mradang\LaravelOss\Models\OssObject;
@@ -320,9 +321,11 @@ class OssService
     }
 
     // 通过本地文件上传
-    public static function createByFile($class, $key, $filename, array $data, $extension = null)
+    public static function createByFile($class, $key, $filename, array $data)
     {
         // 文件扩展名
+        $file = new File($filename);
+        $extension = $file->guessExtension();
         $extension = \strtolower($extension ?? pathinfo($filename, PATHINFO_EXTENSION));
         if (empty($extension)) {
             throw new \Exception('文件扩展名为空');
@@ -372,22 +375,10 @@ class OssService
         // 下载
         $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss');
         $client = new Client();
-        $response = $client->request('GET', $url, ['sink' => $temp_file]);
-
-        // 解析 URL 文件名
-        $filename = basename(parse_url($url, PHP_URL_PATH));
-
-        // 解析 Content-Disposition 文件名
-        $ContentDisposition = Arr::get($response->getHeaders(), 'Content-Disposition.0');
-        if (preg_match('/filename="(.*?)"/', $ContentDisposition, $matches)) {
-            $filename = $matches[1];
-        }
-
-        // 计算扩展名
-        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+        $client->request('GET', $url, ['sink' => $temp_file]);
 
         // 上传文件
-        $ret = self::createByFile($class, $key, $temp_file, $data, $extension);
+        $ret = self::createByFile($class, $key, $temp_file, $data);
         @\unlink($temp_file);
         return $ret;
     }
