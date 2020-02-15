@@ -77,15 +77,15 @@ protected static function boot()
 ```
 
 ### 模型实例方法
-> - array ossobjectUploadParams($extension, array $data = []) 为模型生成前端直传参数
+> - array ossobjectUploadParams($extension, $group, array $data = []) 为模型生成前端直传参数
 > - morphMany ossobjects 对象关联（一对多）
 > - mradang\LaravelOss\Models\OssObject ossobjectFind($name) 查找对象
 > - void ossobjectDelete($name) 删除对象（异步）
 > - void ossobjectClear() 清空模型的全部对象
 > - void ossobjectSaveSort(array $data) 保存对象排序
-> - mradang\LaravelOss\Models\OssObject ossobjectCreateByFile($filename, array $data = []) 上传本地文件
-> - mradang\LaravelOss\Models\OssObject ossobjectCreateByUrl($url, array $data = []) 上传 Url 文件
-> - void ossobjectAsyncCreateByUrl($url, array $data = []) 异步上传 Url 文件
+> - mradang\LaravelOss\Models\OssObject ossobjectCreateByFile($filename, $group, array $data = []) 上传本地文件
+> - mradang\LaravelOss\Models\OssObject ossobjectCreateByUrl($url, $group, array $data = []) 上传 Url 文件
+> - void ossobjectAsyncCreateByUrl($url, $group, array $data = []) 异步上传 Url 文件
 
 ### 模型静态方法
 ```php

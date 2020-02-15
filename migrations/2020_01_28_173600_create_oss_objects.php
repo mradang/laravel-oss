@@ -18,6 +18,7 @@ class CreateOssObjects extends Migration
             $table->bigIncrements('id');
             $table->string('ossobjectable_type'); // 对应所属模型的类名
             $table->unsignedInteger('ossobjectable_id'); // 对应所属模型的 ID
+            $table->string('group'); // 分组名
             $table->string('name'); // 对象名
             $table->unsignedInteger('size'); // 对象大小
             $table->string('mimeType')->nullable(); // mimeType

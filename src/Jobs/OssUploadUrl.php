@@ -12,18 +12,19 @@ class OssUploadUrl implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $class, $key, $url, $data;
+    protected $class, $key, $url, $group, $data;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($class, $key, $url, array $data)
+    public function __construct($class, $key, $url, $group, array $data)
     {
         $this->class = $class;
         $this->key = $key;
         $this->url = $url;
+        $this->group = $group;
         $this->data = $data;
     }
 
@@ -34,6 +35,12 @@ class OssUploadUrl implements ShouldQueue
      */
     public function handle()
     {
-        \mradang\LaravelOss\Services\OssService::createByUrl($this->class, $this->key, $this->url, $this->data);
+        \mradang\LaravelOss\Services\OssService::createByUrl(
+            $this->class,
+            $this->key,
+            $this->url,
+            $this->group,
+            $this->data
+        );
     }
 }

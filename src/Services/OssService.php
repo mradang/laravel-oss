@@ -14,7 +14,7 @@ use mradang\LaravelOss\Models\OssTrack;
 class OssService
 {
 
-    public static function makeUploadParams($class, $key, $extension, array $data)
+    public static function makeUploadParams($class, $key, $extension, $group, array $data)
     {
         // 上传参数
         $host = config('oss.endpoint');
@@ -22,6 +22,7 @@ class OssService
         $callback_vars = [
             'class' => $class,
             'key' => $key,
+            'group' => $group,
             'data' => $data,
         ];
         $callback_vars_encrypt = encrypt($callback_vars);
@@ -168,6 +169,7 @@ class OssService
         return [
             'ossobjectable_type' => Arr::get($callbackvars, 'class'),
             'ossobjectable_id' => Arr::get($callbackvars, 'key'),
+            'group' => Arr::get($callbackvars, 'group'),
             'name' => Arr::get($params, 'object'),
             'size' => Arr::get($params, 'size'),
             'mimeType' => Arr::get($params, 'mimeType'),
@@ -297,12 +299,16 @@ class OssService
         }
     }
 
-    public static function clear($class, $key)
+    public static function clear($class, $key, $group)
     {
         $objects = OssObject::where([
             'ossobjectable_type' => $class,
             'ossobjectable_id' => $key,
-        ])->get();
+        ])->where(function ($query) use ($group) {
+            if ($group) {
+                $query->where('group', $group);
+            }
+        })->get();
         foreach ($objects as $object) {
             self::delete($class, $key, $object->name);
         }
@@ -321,7 +327,7 @@ class OssService
     }
 
     // 通过本地文件上传
-    public static function createByFile($class, $key, $filename, array $data)
+    public static function createByFile($class, $key, $filename, $group, array $data)
     {
         // 文件扩展名
         $file = new File($filename);
@@ -354,6 +360,7 @@ class OssService
         $model = new OssObject([
             'ossobjectable_type' => $class,
             'ossobjectable_id' => $key,
+            'group' => $group,
             'name' => $object_name,
             'size' => \filesize($filename),
             'mimeType' => Arr::get($ret, 'oss-requestheaders.Content-Type'),
@@ -370,7 +377,7 @@ class OssService
     }
 
     // 同步上传指定 URL 文件
-    public static function createByUrl($class, $key, $url, array $data)
+    public static function createByUrl($class, $key, $url, $group, array $data)
     {
         // 下载
         $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss');
@@ -378,15 +385,15 @@ class OssService
         $client->request('GET', $url, ['sink' => $temp_file]);
 
         // 上传文件
-        $ret = self::createByFile($class, $key, $temp_file, $data);
+        $ret = self::createByFile($class, $key, $temp_file, $group, $data);
         @\unlink($temp_file);
         return $ret;
     }
 
     // 异步上传指定 Url 文件
-    public static function asyncCreateByUrl($class, $key, $url, array $data)
+    public static function asyncCreateByUrl($class, $key, $url, $group, array $data)
     {
-        \mradang\LaravelOss\Jobs\OssUploadUrl::dispatch($class, $key, $url, $data);
+        \mradang\LaravelOss\Jobs\OssUploadUrl::dispatch($class, $key, $url, $group, $data);
     }
 
     // 调度执行跟踪器，检查上传 OSS Object 的数据入库情况
