@@ -405,7 +405,7 @@ class OssService
         // - callback 作业未处理完成（job 任务过多，无法及时处理，数据没有存入数据库）
         // - 用户上传失败
         // - 用户放弃上传
-        $before_time = now()->addHours(24); // 24 小时之前
+        $before_time = now()->subHours(24); // 24 小时之前
         $tracks = OssTrack::where('created_at', '<', $before_time)->inRandomOrder()->take(5)->get();
         $tracks->each(function ($track) {
             // 取出常用值
