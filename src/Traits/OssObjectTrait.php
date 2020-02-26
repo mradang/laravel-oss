@@ -6,7 +6,6 @@ use mradang\LaravelOss\Services\OssService;
 
 trait OssObjectTrait
 {
-
     public function ossobjectUploadParams($extension, $group, array $data = [])
     {
         return OssService::makeUploadParams(__CLASS__, $this->getKey(), $extension, $group, $data);
@@ -57,4 +56,10 @@ trait OssObjectTrait
         return OssService::generateObjectUrl(__CLASS__, $object, $timeout, $options);
     }
 
+    protected static function bootOssobjectTrait()
+    {
+        static::deleting(function ($model) {
+            $model->ossobjectClear();
+        });
+    }
 }

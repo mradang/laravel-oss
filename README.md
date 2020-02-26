@@ -65,16 +65,7 @@ use mradang\LaravelOss\Traits\OssObjectTrait;
 ```
 
 ### 模型 boot
-```php
-protected static function boot()
-{
-    parent::boot();
-    // 模型删除时自动清理 OSS 对象
-    static::deleting(function($model) {
-        $model->ossobjectClear();
-    });
-}
-```
+模型删除时自动清理 OSS 对象
 
 ### 模型实例方法
 > - array ossobjectUploadParams($extension, $group, array $data = []) 为模型生成前端直传参数
