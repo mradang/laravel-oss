@@ -13,7 +13,6 @@ use mradang\LaravelOss\Models\OssTrack;
 
 class OssService
 {
-
     public static function makeUploadParams($class, $key, $extension, $group, array $data)
     {
         // 上传参数
@@ -94,12 +93,7 @@ class OssService
 
     public static function app_url()
     {
-        if (config('app.env') === 'production') {
-            $schemeAndHttpHost = request()->getSchemeAndHttpHost();
-        } else {
-            $schemeAndHttpHost = config('app.url');
-        }
-        return $schemeAndHttpHost;
+        return config('oss.callback', request()->getSchemeAndHttpHost());
     }
 
     public static function gmt_iso8601($time)
