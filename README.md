@@ -27,6 +27,8 @@ OSS_BUCKET=
 OSS_DIR=
 # 上传文件最大限制，默认 2MB
 OSS_MAXSIZE=2MB
+# 回调地址，默认当前用户访问地址：request()->getSchemeAndHttpHost()
+OSS_CALLBACK=
 ```
 
 2. 添加对象跟踪任务
