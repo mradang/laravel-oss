@@ -27,7 +27,7 @@ class OssService
         $callback_vars_encrypt = encrypt($callback_vars);
 
         // 回调参数
-        $callbackUrl = config('oss.callback') . '/api/laravel_oss/callback';
+        $callbackUrl = self::app_url() . '/api/laravel_oss/callback';
         $callback_param = [
             'callbackUrl' => $callbackUrl,
             'callbackBody' => \implode('&', [
@@ -89,6 +89,11 @@ class OssService
         $response['key'] = $object_name;  // 这个参数是设置用户上传文件名
         $response['callbackvars'] = $callback_vars_encrypt;
         return $response;
+    }
+
+    public static function app_url()
+    {
+        return config('oss.callback') ?: request()->getSchemeAndHttpHost();
     }
 
     public static function gmt_iso8601($time)

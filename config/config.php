@@ -49,6 +49,6 @@ return [
     | callback 主机
     |--------------------------------------------------------------------------
     */
-    'callback' => env('OSS_CALLBACK', request()->getSchemeAndHttpHost()),
+    'callback' => env('OSS_CALLBACK', ''),
 
 ];
