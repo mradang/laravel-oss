@@ -18,11 +18,20 @@
             "mradang\\LaravelOss\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests"
+        }
+    },
     "extra": {
         "laravel": {
             "providers": [
                 "mradang\\LaravelOss\\LaravelOssServiceProvider"
             ]
         }
+    },
+    "require-dev": {
+        "orchestra/testbench": "^5.3",
+        "phpunit/phpunit": "^9.2"
     }
 }
