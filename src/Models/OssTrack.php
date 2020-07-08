@@ -4,8 +4,8 @@ namespace mradang\LaravelOss\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class OssTrack extends Model {
-
+class OssTrack extends Model
+{
     protected $guarded = [];
 
     protected $hidden = [
@@ -13,8 +13,8 @@ class OssTrack extends Model {
         'osstracktable_id',
     ];
 
-    public function osstracktable() {
+    public function osstracktable()
+    {
         return $this->morphTo();
     }
-
 }

@@ -4,8 +4,8 @@ namespace mradang\LaravelOss\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class OssObject extends Model {
-
+class OssObject extends Model
+{
     protected $guarded = [];
 
     protected $casts = [
@@ -18,8 +18,8 @@ class OssObject extends Model {
         'ossobjectable_id',
     ];
 
-    public function ossobjectable() {
+    public function ossobjectable()
+    {
         return $this->morphTo();
     }
-
 }
