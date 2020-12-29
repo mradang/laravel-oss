@@ -3,8 +3,8 @@
 namespace mradang\LaravelOss;
 
 use Illuminate\Support\ServiceProvider;
+use mradang\LaravelOss\Controllers\OssController;
 use OSS\OssClient;
-use mradang\LaravelOss\Services\OssService;
 
 class LaravelOssServiceProvider extends ServiceProvider
 {
@@ -33,10 +33,11 @@ class LaravelOssServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(realpath(__DIR__ . '/../migrations/'));
         }
 
-        $this->app->router->group(['prefix' => 'api/laravel_oss'], function ($router) {
-            $router->post('callback', function () {
-                return OssService::callback();
-            });
+        $this->app->router->group([
+            'prefix' => 'api/laravel_oss',
+            'namespace' => 'mradang\LaravelOss\Controllers',
+        ], function ($router) {
+            $router->post('callback', [OssController::class, 'callback']);
         });
     }
 }
