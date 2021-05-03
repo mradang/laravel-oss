@@ -260,12 +260,12 @@ class OssService
         ])->first();
     }
 
-    public static function delete($class, $key, $object)
+    public static function delete($class, $key, $object): bool
     {
         // 检查目录，避免操作其它目录内容
         $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/' . $key . '/';
         if (!Str::startsWith($object, $dir)) {
-            throw new \Exception('非法请求');
+            return false;
         }
 
         // 尝试删除数据
@@ -275,11 +275,13 @@ class OssService
             'name' => $object,
         ])->delete();
         if (empty($row)) {
-            throw new \Exception('数据未就绪，请重试');
+            return false;
         }
 
         // OSS Object 删除作业
         \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
+
+        return true;
     }
 
     // 删除 OSS Object，仅限数据库相关数据删除后调用
