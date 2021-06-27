@@ -188,7 +188,9 @@ class OssService
 
         // 获取公钥内容
         $client = new Client();
-        $response = $client->request('GET', $pubKeyUrl);
+        $response = $client->request('GET', $pubKeyUrl, [
+            'connect_timeout' => 10,
+        ]);
         $pubKey = $response->getBody()->getContents();
 
         if (empty($pubKey)) {
@@ -373,12 +375,15 @@ class OssService
     }
 
     // 同步上传指定 URL 文件
-    public static function createByUrl($class, $key, $url, $group, array $data)
+    public static function createByUrl($class, $key, $url, $group, array $data, $content_timeout = 10)
     {
         // 下载
         $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss');
         $client = new Client();
-        $client->request('GET', $url, ['sink' => $temp_file]);
+        $client->request('GET', $url, [
+            'sink' => $temp_file,
+            'connect_timeout' => $content_timeout,
+        ]);
 
         // 上传文件
         $ret = self::createByFile($class, $key, $temp_file, $group, $data);

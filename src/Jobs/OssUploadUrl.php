@@ -40,7 +40,8 @@ class OssUploadUrl implements ShouldQueue
             $this->key,
             $this->url,
             $this->group,
-            $this->data
+            $this->data,
+            20
         );
     }
 }
