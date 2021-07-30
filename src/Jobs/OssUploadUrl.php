@@ -12,6 +12,9 @@ class OssUploadUrl implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    // 任务可以尝试的最大次数
+    public $tries = 10;
+
     protected $class, $key, $url, $group, $data;
 
     /**
