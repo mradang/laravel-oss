@@ -6,6 +6,11 @@ use mradang\LaravelOss\Services\OssService;
 
 trait OssObjectTrait
 {
+    private function getOrderByDirection()
+    {
+        return $this->ossOrderByDirection ? $this->ossOrderByDirection : 'asc';
+    }
+
     public function ossobjectUploadParams($extension, $group, array $data = [])
     {
         return OssService::makeUploadParams(__CLASS__, $this->getKey(), $extension, $group, $data);
@@ -13,7 +18,8 @@ trait OssObjectTrait
 
     public function ossobjects()
     {
-        return $this->morphMany('mradang\LaravelOss\Models\OssObject', 'ossobjectable')->orderBy('sort');
+        return $this->morphMany('mradang\LaravelOss\Models\OssObject', 'ossobjectable')
+            ->orderBy('sort', $this->getOrderByDirection());
     }
 
     public function ossobjectFind($name)
