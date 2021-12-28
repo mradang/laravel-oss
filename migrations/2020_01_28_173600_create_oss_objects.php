@@ -26,6 +26,8 @@ class CreateOssObjects extends Migration
             $table->unsignedInteger('sort'); // 排序
             $table->longText('data'); // 附加数据
             $table->timestamps();
+
+            $table->index(['ossobjectable_type', 'ossobjectable_id']);
         });
     }
 
