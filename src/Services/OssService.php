@@ -4,8 +4,8 @@ namespace mradang\LaravelOss\Services;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
-use GuzzleHttp\Client;
 use Illuminate\Http\File;
+use Illuminate\Support\Facades\Http;
 use OSS\Core\MimeTypes;
 
 use mradang\LaravelOss\Models\OssObject;
@@ -187,11 +187,7 @@ class OssService
         }
 
         // 获取公钥内容
-        $client = new Client();
-        $response = $client->request('GET', $pubKeyUrl, [
-            'connect_timeout' => 10,
-        ]);
-        $pubKey = $response->getBody()->getContents();
+        $pubKey = Http::connectTimeout(10)->get($pubKeyUrl)->body();
 
         if (empty($pubKey)) {
             return false;
@@ -379,11 +375,7 @@ class OssService
     {
         // 下载
         $temp_file = tempnam(sys_get_temp_dir(), 'laravel-oss');
-        $client = new Client();
-        $client->request('GET', $url, [
-            'sink' => $temp_file,
-            'connect_timeout' => $content_timeout,
-        ]);
+        Http::sink($temp_file)->connectTimeout($content_timeout)->get($url);
 
         // 上传文件
         $ret = self::createByFile($class, $key, $temp_file, $group, $data);

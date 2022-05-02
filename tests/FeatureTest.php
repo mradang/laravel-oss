@@ -2,10 +2,9 @@
 
 namespace Tests;
 
-use GuzzleHttp\Client;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use mradang\LaravelOss\Jobs\OssDelete;
+use Illuminate\Support\Facades\Http;
 use mradang\LaravelOss\Models\OssTrack;
 
 class FeatureTest extends TestCase
@@ -52,13 +51,11 @@ class FeatureTest extends TestCase
 
         // 生成加密 URL
         $url = $user1->ossobjectGenerateUrl($oss2->name);
-        $client = new Client();
-        $response = $client->request('GET', $url);
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertEquals($oss2->size, Arr::get($response->getHeader('Content-Length'), 0));
+        $response = Http::get($url);
+        $this->assertSame(200, $response->status());
+        $this->assertEquals($oss2->size, Arr::get($response->headers()['Content-Length'], 0));
 
         // 删除第 2 个 oss 对象
-        $this->expectsJobs(OssDelete::class);
         $user1->ossobjectDelete($oss2->name);
         $user1->load('ossobjects');
         $this->assertSame(1, $user1->ossobjects->count());
@@ -82,7 +79,6 @@ class FeatureTest extends TestCase
         $oss3 = $user2->ossobjectCreateByFile($fakeImage->getRealPath(), $group);
         $this->assertSame([], $oss3->data);
         $this->assertEquals($fakeImage->getSize(), $oss3->size);
-        $this->expectsJobs(OssDelete::class);
         $user2->delete();
     }
 
