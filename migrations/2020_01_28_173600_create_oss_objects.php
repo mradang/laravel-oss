@@ -15,7 +15,7 @@ return new class extends Migration
     {
         // 阿里云 OSS 对象表
         Schema::create('oss_objects', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             $table->string('ossobjectable_type'); // 对应所属模型的类名
             $table->unsignedInteger('ossobjectable_id'); // 对应所属模型的 ID
             $table->string('group'); // 分组名

@@ -16,7 +16,7 @@ return new class extends Migration
         // 阿里云 OSS 对象跟踪表
         // 用于创建上传参数后，跟踪数据入库情况
         Schema::create('oss_tracks', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             $table->string('osstracktable_type'); // 对应所属模型的类名
             $table->unsignedInteger('osstracktable_id'); // 对应所属模型的 ID
             $table->string('name'); // 对象名
