@@ -241,9 +241,11 @@ class OssService
         }
 
         // 检查目录，避免为其它目录内容生成链接
-        $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/';
-        if (!Str::startsWith($object, $dir)) {
-            return null;
+        if (!config('app.debug')) {
+            $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/';
+            if (!Str::startsWith($object, $dir)) {
+                return null;
+            }
         }
 
         return app('oss')->signUrl(config('oss.bucket'), $object, $timeout, 'GET', $options);
