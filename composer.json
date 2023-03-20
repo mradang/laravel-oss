@@ -10,7 +10,12 @@
     ],
     "require": {
         "aliyuncs/oss-sdk-php": "^2.4",
-        "laravel/framework": "~9.0"
+        "laravel/framework": "^9.0 || ^10.0"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^7.2",
+        "orchestra/testbench": "^8.0",
+        "phpunit/phpunit": "^10.0"
     },
     "autoload": {
         "psr-4": {
@@ -28,11 +33,5 @@
                 "mradang\\LaravelOss\\LaravelOssServiceProvider"
             ]
         }
-    },
-    "require-dev": {
-        "guzzlehttp/guzzle": "^7.2",
-        "laravel/framework": "^9.0",
-        "phpunit/phpunit": "~9.0",
-        "orchestra/testbench": "^7.0"
     }
 }
