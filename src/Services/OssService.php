@@ -2,14 +2,13 @@
 
 namespace mradang\LaravelOss\Services;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Arr;
 use Illuminate\Http\File;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use OSS\Core\MimeTypes;
-
+use Illuminate\Support\Str;
 use mradang\LaravelOss\Models\OssObject;
 use mradang\LaravelOss\Models\OssTrack;
+use OSS\Core\MimeTypes;
 
 class OssService
 {
@@ -79,7 +78,7 @@ class OssService
         ]);
 
         // 返回
-        $response = array();
+        $response = [];
         $response['accessid'] = config('oss.id');
         $response['host'] = $host;
         $response['policy'] = $base64_policy;
@@ -88,6 +87,7 @@ class OssService
         $response['callback'] = $base64_callback_body;
         $response['key'] = $object_name;  // 这个参数是设置用户上传文件名
         $response['callbackvars'] = $callback_vars_encrypt;
+
         return $response;
     }
 
@@ -103,12 +103,14 @@ class OssService
         $expiration = $mydatetime->format(\DateTime::ISO8601);
         $pos = strpos($expiration, '+');
         $expiration = substr($expiration, 0, $pos);
+
         return $expiration . 'Z';
     }
 
     public static function generateObjectName()
     {
         $rand = sprintf('%04d', mt_rand(1, 9999));
+
         return date('Ymd_His') . '_' . $rand;
     }
 
@@ -126,8 +128,10 @@ class OssService
                 case 'k':
                     $m[1] *= 1024;
             }
+
             return $m[1];
         }, $value);
+
         return is_numeric($ret) ? (int) $ret : 0;
     }
 
@@ -152,6 +156,7 @@ class OssService
             $authorizationBase64,
             $body
         ));
+
         return self::parseCallbackBody($body);
     }
 
@@ -160,6 +165,7 @@ class OssService
     {
         parse_str($body, $params);
         $callbackvars = decrypt($params['callbackvars']);
+
         return [
             'ossobjectable_type' => Arr::get($callbackvars, 'class'),
             'ossobjectable_id' => Arr::get($callbackvars, 'key'),
@@ -214,6 +220,7 @@ class OssService
         $model = \call_user_func([$data['ossobjectable_type'], 'find'], $data['ossobjectable_id']);
         if (empty($model)) {
             info('模型不存在，忽略 OSS Callback');
+
             return false;
         }
 
@@ -372,6 +379,23 @@ class OssService
         return $model;
     }
 
+    public static function updateData($class, $key, int $id, array $data)
+    {
+        $model = OssObject::where([
+            'id' => $id,
+            'ossobjectable_type' => $class,
+            'ossobjectable_id' => $key,
+        ])->first();
+
+        if ($model) {
+            $model->data = [
+                ...$model->data,
+                ...$data,
+            ];
+            $model->save();
+        }
+    }
+
     // 同步上传指定 URL 文件
     public static function createByUrl($class, $key, $url, $group, array $data, $content_timeout = 10)
     {
@@ -382,6 +406,7 @@ class OssService
         // 上传文件
         $ret = self::createByFile($class, $key, $temp_file, $group, $data);
         @\unlink($temp_file);
+
         return $ret;
     }
 

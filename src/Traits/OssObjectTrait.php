@@ -62,6 +62,11 @@ trait OssObjectTrait
         return OssService::generateObjectUrl(__CLASS__, $object, $timeout, $options);
     }
 
+    public function ossobjectUpdateData(int $id, array $data)
+    {
+        return OssService::updateData(__CLASS__, $this->getKey(), $id, $data);
+    }
+
     protected static function bootOssobjectTrait()
     {
         static::deleting(function ($model) {
