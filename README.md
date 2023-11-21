@@ -79,6 +79,7 @@ use mradang\LaravelOss\Traits\OssObjectTrait;
 > - mradang\LaravelOss\Models\OssObject ossobjectCreateByFile($filename, $group, array $data = []) 上传本地文件
 > - mradang\LaravelOss\Models\OssObject ossobjectCreateByUrl($url, $group, array $data = []) 上传 Url 文件
 > - void ossobjectAsyncCreateByUrl($url, $group, array $data = []) 异步上传 Url 文件
+> - void ossobjectUpdateData(int $id, array $data) 更新附加数据
 
 ### 模型静态方法
 ```php
