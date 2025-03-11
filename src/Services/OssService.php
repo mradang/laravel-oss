@@ -16,7 +16,7 @@ class OssService
     {
         // 上传参数
         $host = config('oss.endpoint');
-        $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/' . $key . '/';
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
         $callback_vars = [
             'class' => $class,
             'key' => $key,
@@ -26,7 +26,7 @@ class OssService
         $callback_vars_encrypt = encrypt($callback_vars);
 
         // 回调参数
-        $callbackUrl = self::app_url() . '/api/laravel_oss/callback';
+        $callbackUrl = self::app_url().'/api/laravel_oss/callback';
         $callback_param = [
             'callbackUrl' => $callbackUrl,
             'callbackBody' => \implode('&', [
@@ -48,7 +48,7 @@ class OssService
         // 上传策略
         $end = time() + 30; // 30秒内有效
         $expiration = self::gmt_iso8601($end);
-        $object_name = $dir . self::generateObjectName() . '.' . $extension; // 指定上传对象名
+        $object_name = $dir.self::generateObjectName().'.'.$extension; // 指定上传对象名
 
         $conditions = [
             // 限定存储桶
@@ -58,7 +58,7 @@ class OssService
             // 强制上传对象名称
             ['eq', '$key', $object_name],
             // 限制 Content-Type 类型
-            ['eq', '$Content-Type', MimeTypes::getMimetype('filename.' . $extension)],
+            ['eq', '$Content-Type', MimeTypes::getMimetype('filename.'.$extension)],
             // 限制额外的参数
             ['eq', '$x:callbackvars', $callback_vars_encrypt],
         ];
@@ -104,14 +104,14 @@ class OssService
         $pos = strpos($expiration, '+');
         $expiration = substr($expiration, 0, $pos);
 
-        return $expiration . 'Z';
+        return $expiration.'Z';
     }
 
     public static function generateObjectName()
     {
         $rand = sprintf('%04d', mt_rand(1, 9999));
 
-        return date('Ymd_His') . '_' . $rand;
+        return date('Ymd_His').'_'.$rand;
     }
 
     // 将人类可读的文件大小值转换为数字，支持 K, M, G and T，无效的输入返回 0
@@ -204,9 +204,9 @@ class OssService
         $path = $request_uri;
         $pos = strpos($path, '?');
         if ($pos === false) {
-            $authStr = urldecode($path) . "\n" . $body;
+            $authStr = urldecode($path)."\n".$body;
         } else {
-            $authStr = urldecode(substr($path, 0, $pos)) . substr($path, $pos, strlen($path) - $pos) . "\n" . $body;
+            $authStr = urldecode(substr($path, 0, $pos)).substr($path, $pos, strlen($path) - $pos)."\n".$body;
         }
 
         // 验证签名
@@ -248,9 +248,9 @@ class OssService
         }
 
         // 检查目录，避免为其它目录内容生成链接
-        if (!config('app.debug')) {
-            $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/';
-            if (!Str::startsWith($object, $dir)) {
+        if (! config('app.debug')) {
+            $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/';
+            if (! Str::startsWith($object, $dir)) {
                 return null;
             }
         }
@@ -270,8 +270,8 @@ class OssService
     public static function delete($class, $key, $object): bool
     {
         // 检查目录，避免操作其它目录内容
-        $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/' . $key . '/';
-        if (!Str::startsWith($object, $dir)) {
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
+        if (! Str::startsWith($object, $dir)) {
             return false;
         }
 
@@ -298,7 +298,7 @@ class OssService
         $ret = app('oss')->deleteObject(config('oss.bucket'), $object);
         $http_code = Arr::get($ret, 'info.http_code');
         if ($http_code != 204) {
-            throw new \Exception('OSS Object ' . $object . ' delete fail');
+            throw new \Exception('OSS Object '.$object.' delete fail');
         }
     }
 
@@ -341,12 +341,12 @@ class OssService
         }
 
         // 生成 OSS Object 名
-        $dir = Str::finish(config('oss.dir'), '/') . \strtolower(class_basename($class)) . '/' . $key . '/';
-        $object_name = $dir . self::generateObjectName() . '.' . $extension; // 指定上传对象名
+        $dir = Str::finish(config('oss.dir'), '/').\strtolower(class_basename($class)).'/'.$key.'/';
+        $object_name = $dir.self::generateObjectName().'.'.$extension; // 指定上传对象名
 
         // 上传选项
         $options = [];
-        $mime = MimeTypes::getMimetype('filename.' . $extension);
+        $mime = MimeTypes::getMimetype('filename.'.$extension);
         if ($mime) {
             $options['Content-Type'] = $mime;
         }
@@ -355,7 +355,7 @@ class OssService
         $ret = app('oss')->uploadFile(config('oss.bucket'), $object_name, $filename, $options);
         $http_code = Arr::get($ret, 'info.http_code');
         if ($http_code != 200) {
-            throw new \Exception('OSS Object ' . $object_name . ' upload fail.');
+            throw new \Exception('OSS Object '.$object_name.' upload fail.');
         }
 
         // 入库
@@ -440,7 +440,7 @@ class OssService
                 'name' => $object,
             ])->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 \mradang\LaravelOss\Jobs\OssDelete::dispatch($class, $key, $object);
                 $track->delete();
             }

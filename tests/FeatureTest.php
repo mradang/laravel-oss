@@ -9,12 +9,12 @@ use mradang\LaravelOss\Models\OssTrack;
 
 class FeatureTest extends TestCase
 {
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
     }
 
-    public function testBasicFeatures()
+    public function test_basic_features()
     {
         $user1 = User::create(['name' => 'user1']);
         $user2 = User::create(['name' => 'user2']);
@@ -82,7 +82,7 @@ class FeatureTest extends TestCase
         $user2->delete();
     }
 
-    public function testConfig()
+    public function test_config()
     {
         $this->assertEquals('test', $this->app['config']['oss.dir']);
         $this->assertEquals('10mb', $this->app['config']['oss.maxsize']);

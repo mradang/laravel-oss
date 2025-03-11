@@ -15,7 +15,11 @@ class OssDelete implements ShouldQueue
     // 任务可以尝试的最大次数
     public $tries = 10;
 
-    protected $class, $key, $object;
+    protected $class;
+
+    protected $key;
+
+    protected $object;
 
     /**
      * Create a new job instance.

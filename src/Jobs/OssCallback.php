@@ -15,7 +15,13 @@ class OssCallback implements ShouldQueue
     // 任务可以尝试的最大次数
     public $tries = 10;
 
-    protected $request_uri, $pubKeyUrlBase64, $authorizationBase64, $body;
+    protected $request_uri;
+
+    protected $pubKeyUrlBase64;
+
+    protected $authorizationBase64;
+
+    protected $body;
 
     /**
      * Create a new job instance.

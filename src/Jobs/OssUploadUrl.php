@@ -15,7 +15,15 @@ class OssUploadUrl implements ShouldQueue
     // 任务可以尝试的最大次数
     public $tries = 10;
 
-    protected $class, $key, $url, $group, $data;
+    protected $class;
+
+    protected $key;
+
+    protected $url;
+
+    protected $group;
+
+    protected $data;
 
     /**
      * Create a new job instance.

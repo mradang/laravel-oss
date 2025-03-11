@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" backupGlobals="false" backupStaticAttributes="false" bootstrap="vendor/autoload.php" colors="true" convertErrorsToExceptions="true" convertNoticesToExceptions="true" convertWarningsToExceptions="true" processIsolation="false" stopOnFailure="false" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
-  <coverage>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" backupGlobals="false" bootstrap="vendor/autoload.php" colors="true" processIsolation="false" stopOnFailure="false" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd" cacheDirectory=".phpunit.cache" backupStaticProperties="false">
+  <testsuites>
+    <testsuite name="Test Suite">
+      <directory>tests</directory>
+    </testsuite>
+  </testsuites>
+  <php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="APP_KEY" value="xxx"/>
+    <env name="OSS_ACCESS_KEY_ID" value="xxx"/>
+    <env name="OSS_ACCESS_KEY_SECRET" value="xxx"/>
+    <env name="OSS_ENDPOINT" value="https://a.b.c"/>
+    <env name="OSS_BUCKET" value="xxx"/>
+    <env name="OSS_DIR" value="test"/>
+    <env name="OSS_MAXSIZE" value="10mb"/>
+    <env name="OSS_CALLBACK" value="http://a.b.c"/>
+  </php>
+  <source>
     <include>
       <directory suffix=".php">src/</directory>
     </include>
     <exclude>
       <directory>vendor/</directory>
     </exclude>
-  </coverage>
-  <testsuites>
-    <testsuite name="Test Suite">
-      <directory>tests</directory>
-    </testsuite>
-  </testsuites>
-    <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
-        <env name="OSS_ACCESS_KEY_ID" value="xxx"/>
-        <env name="OSS_ACCESS_KEY_SECRET" value="xxx"/>
-        <env name="OSS_ENDPOINT" value="https://a.b.c"/>
-        <env name="OSS_BUCKET" value="xxx"/>
-        <env name="OSS_DIR" value="test"/>
-        <env name="OSS_MAXSIZE" value="10mb"/>
-        <env name="OSS_CALLBACK" value="http://a.b.c"/>
-    </php>
+  </source>
 </phpunit>

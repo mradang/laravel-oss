@@ -10,10 +10,11 @@ class LaravelOssServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->mergeConfigFrom(realpath(__DIR__ . '/../config/config.php'), 'oss');
+        $this->mergeConfigFrom(realpath(__DIR__.'/../config/config.php'), 'oss');
 
         $this->app->singleton('oss', function ($app) {
             $config = $app->config->get('oss');
+
             return new OssClient(
                 $config['id'],
                 $config['key'],
@@ -27,10 +28,10 @@ class LaravelOssServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                realpath(__DIR__ . '/../config/config.php') => config_path('oss.php')
+                realpath(__DIR__.'/../config/config.php') => config_path('oss.php'),
             ], 'config');
 
-            $this->loadMigrationsFrom(realpath(__DIR__ . '/../migrations/'));
+            $this->loadMigrationsFrom(realpath(__DIR__.'/../migrations/'));
         }
 
         $this->app->router->group([
